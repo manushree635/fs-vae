@@ -46,14 +46,9 @@ a:hover { color: #0f5a42; }
 .teaser-img { width: 100%; display: block; margin-bottom: 1.4rem; }
 .teaser .subtitle { font-size: 1.08rem; line-height: 1.7; color: var(--muted); max-width: 52rem; margin: 0 auto; }
 .teaser .subtitle b { color: var(--ink); font-weight: 600; }
-.highlights { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin-top: 2.2rem; }
-.highlight {
   text-align: center; padding: 1.2rem 1rem; border: 1px solid var(--line); border-radius: 12px; background: #fff;
   display: flex; flex-direction: column; gap: 0.35rem;
 }
-.hl-num { font-family: var(--head); font-weight: 800; font-size: 2rem; color: var(--accent); line-height: 1; }
-.hl-label { font-size: 0.88rem; color: var(--muted); line-height: 1.4; }
-@media (max-width: 768px) { .highlights { grid-template-columns: 1fr; } }
 
 /* sections */
 .section { padding-top: 4.5rem; padding-bottom: 4.5rem; }
