@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="FS-VAE: a decoder-only, cross-resolution finetuning framework that restores high-frequency detail in low-resolution VAE latents.">
+  <meta name="keywords" content="VAE, latent diffusion, steerable pyramid, frequency, distillation, FS-VAE">
+  <title>FS-VAE: Frequency-Steered VAEs</title>
+
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.4/css/bulma.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
+  <link rel="stylesheet" href="./static/css/index.css">
+</head>
+<body>
+
+<section class="hero">
+  <div class="hero-body">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered">
+        <div class="column has-text-centered">
+          <h1 class="title is-1 publication-title">Frequency-Steered VAEs: Restoring Fine Details in Low-Resolution Latents</h1>
+          <div class="is-size-5 publication-authors">
+            <span class="author-block">Anonymous Authors</span>
+          </div>
+          <div class="is-size-5 publication-authors">
+            <span class="author-block">Under review at ICLR 2027</span>
+          </div>
+
+          <div class="column has-text-centered">
+            <div class="publication-links">
+              <span class="link-block">
+                <a href="#" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="fas fa-file-pdf"></i></span><span>Paper</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="#" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="ai ai-arxiv"></i></span><span>arXiv</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="#" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="fab fa-github"></i></span><span>Code</span>
+                </a>
+              </span>
+              <span class="link-block">
+                <a href="#BibTeX" class="external-link button is-normal is-rounded is-dark">
+                  <span class="icon"><i class="fas fa-quote-right"></i></span><span>BibTeX</span>
+                </a>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="hero teaser">
+  <div class="container is-max-desktop">
+    <div class="hero-body">
+      <img src="./static/images/fig1.jpg" class="teaser-img" alt="Ground truth, SD-VAE, SD-VAE-ft-MSE and FS-VAE reconstructions at 256x256 with face crops and F-Sim scores">
+      <h2 class="subtitle has-text-centered">
+        <span class="dnerf">FS-VAE</span> recovers the fine facial detail that VAEs lose at 256&sup2;,
+        by finetuning only the decoder. Same latent, same encoder, no retraining of the diffusion model.
+      </h2>
+    </div>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <!-- Abstract -->
+    <div class="columns is-centered has-text-centered">
+      <div class="column is-four-fifths">
+        <h2 class="title is-3">Abstract</h2>
+        <div class="content has-text-justified">
+          <p>
+            Latent diffusion models (LDM) rely on VAEs to compress visual inputs for computational efficiency,
+            which is particularly consequential for very high resolution visual inputs. Through an in-depth
+            interpretability analysis, we show that this compression disproportionately degrades high-frequency
+            information at lower spatial resolutions, discarding fine details such as facial features or text patterns.
+          </p>
+          <p>
+            Building on this insight, we propose a cross-resolution finetuning framework we call <span class="dnerf">FS-VAE</span>
+            that uses a higher-resolution VAE as a teacher to supervise its lower-resolution counterpart, recovering
+            lost frequency information via a band-wise <em>steerable-pyramid objective</em>. FS-VAE enables richer
+            reconstruction from low-resolution latents without expanding channel dimensions, reference encoders,
+            external models, or retraining downstream diffusion architectures.
+          </p>
+          <p>
+            Furthermore, we analyze the impact of distinct loss objectives on reconstruction quality and demonstrate
+            our approach's generalizability across diverse image and video VAEs. By preserving the original
+            architecture and latent dimensionality, FS-VAE acts as an efficient, plug-and-play replacement for
+            existing LDM pipelines.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Interactive comparison -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3 has-text-centered">Interactive Comparison</h2>
+    <p class="has-text-centered mb-5">
+      Drag the slider: ground truth on the left, the selected decoder's 256&sup2; reconstruction on the right.
+    </p>
+    <div class="columns is-centered">
+      <div class="column is-6">
+        <div class="compare-stage" id="stage">
+          <img id="imgR" alt="">
+          <img id="imgL" class="compare-top" alt="">
+          <div class="compare-handle"></div>
+          <span class="compare-tag left">Ground truth</span>
+          <span class="compare-tag right" id="tagR">FS-VAE</span>
+        </div>
+        <input type="range" id="slider" class="compare-slider" min="0" max="100" value="50" aria-label="Split position">
+      </div>
+      <div class="column is-5">
+        <p class="heading">Example</p>
+        <div class="thumbs" id="thumbs"></div>
+        <p class="heading mt-4">Decoder &middot; F-Sim &uarr;</p>
+        <div class="methods" id="methods"></div>
+        <div class="context mt-4">
+          <img id="ctx" alt="Full 256x256 input with the face crop marked">
+          <p class="is-size-7">Full 256&sup2; input. The marked face is what the decoder must rebuild.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Investigation -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <div class="columns is-centered">
+      <div class="column is-full-width">
+        <h2 class="title is-3">What Do Low-Resolution VAEs Lose?</h2>
+        <div class="content has-text-justified">
+          <p>
+            We decompose images with a complex steerable pyramid into a high-pass residual <i>H</i>, five
+            octave-spaced levels <i>L0</i>&ndash;<i>L4</i> (128, 64, 32, 16 and 8 cycles per image, four
+            orientations each) and a low-pass residual <i>Lo</i>. Since the transform is invertible, we can swap a
+            single band from the 512&sup2; teacher reconstruction (or the ground truth) into the 256&sup2; student
+            reconstruction and measure how much face identity (F-Sim) returns, analogous to activation patching.
+          </p>
+        </div>
+        <img src="./static/images/fig2.png" class="figure-img" alt="Band swap test">
+        <p class="caption"><b>Band swap test.</b> Swapping only the <i>L1</i> band from the teacher into the student raises F-Sim from 0.206 to 0.635.</p>
+
+        <img src="./static/images/fig3.png" class="figure-img mt-5" alt="Average F-Sim gains per swapped band for four VAEs">
+        <p class="caption"><b>Average F-Sim gain per swapped band</b> on 1,000 TokBench faces. 4-channel VAEs lose identity mainly in <i>L1</i>&ndash;<i>L2</i>;
+          16-channel VAEs in <i>L0</i>&ndash;<i>L1</i>, with smaller gaps overall.</p>
+
+        <div class="takeaway-box mt-5">
+          <p class="takeaway-title">Takeaways</p>
+          <ol>
+            <li>The loss of information between 256&sup2; and 512&sup2; reconstructions can be precisely localized in the frequency domain.</li>
+            <li>Most information is lost in the mid- to high-frequency bands of low-resolution VAEs.</li>
+            <li>The loss of high-frequency information is more pronounced in lower-capacity VAEs.</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Method -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3">Method</h2>
+    <img src="./static/images/fig4.png" class="figure-img" alt="FS-VAE overview">
+    <p class="caption"><b>Overview of FS-VAE.</b> A frozen teacher reconstructs the 512&sup2; image. The student encodes the same image at 256&sup2;
+      with the same frozen encoder; only its decoder is trained. The steerable-pyramid loss penalizes differences between their band magnitudes.</p>
+
+    <h3 class="title is-4 mt-5">Stage 1: Self-distillation in the frequency bands</h3>
+    <div class="content has-text-justified">
+      <p>
+        For each subband <i>k</i> we take magnitude maps <i>a<sub>k</sub></i> = |P<sub>k</sub>(&ycirc;)| of the teacher
+        and the (bicubically upsampled) student, and compute a relative error normalized by the teacher's energy in that band,
+        so low-frequency bands with large coefficients do not dominate the gradient:
+      </p>
+      <p class="has-text-centered">\[ r_k = \frac{\langle |a^T_k - a^S_k| \rangle}{\langle a^T_k \rangle + \varepsilon}, \qquad
+        \mathcal{L}_{\text{dist}} = \frac{\sum_k \omega_k r_k}{\sum_k \omega_k} \]</p>
+      <p class="has-text-centered">\[ \mathcal{L} = \lambda_{\text{rec}}\mathcal{L}_{\ell_1} + \lambda_{\text{lp}}\mathcal{L}_{\text{LPIPS}} + \lambda_{\text{dist}}\mathcal{L}_{\text{dist}} \]</p>
+      <p>
+        Freezing the encoder keeps the latent space fixed, so any diffusion model trained on it can use the new decoder directly.
+      </p>
+    </div>
+
+    <h3 class="title is-4">Stage 2: Adversarial post-tuning</h3>
+    <div class="columns">
+      <div class="column is-7">
+        <img src="./static/images/fig5.jpg" class="figure-img" alt="Stage 1 artifacts and residual power spectra">
+      </div>
+      <div class="column">
+        <div class="content has-text-justified">
+          <p>
+            Matching per-band energy constrains how much energy each band carries, but not where in the band it goes.
+            In 4-channel VAEs this shows up as a faint periodic grain and bright spots in the residual power spectrum.
+            A brief post-tune with &ell;<sub>1</sub>, LPIPS and a PatchGAN loss removes them. 16-channel video VAEs
+            do not show the artifact and use Stage 1 only.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Results -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3">Results</h2>
+
+    <h3 class="title is-4">Gains are largest on small faces</h3>
+    <div class="table-container">
+      <table class="table is-fullwidth is-hoverable results-table">
+        <thead>
+          <tr><th>Face size (relative scale <i>s</i>)</th><th>s &lt; 0.1</th><th>0.1&ndash;0.2</th><th>0.2&ndash;0.3</th><th>s &gt; 0.3</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Instances</td><td>3,196</td><td>6,429</td><td>1,579</td><td>1,513</td></tr>
+          <tr><td>SD-VAE ft-MSE</td><td>0.2090</td><td>0.2368</td><td>0.4054</td><td>0.7204</td></tr>
+          <tr class="ours"><td>FS-VAE, stage 1</td><td><b>0.2271</b> <span class="gain">+8.7%</span></td><td><b>0.2610</b> <span class="gain">+10.2%</span></td><td><b>0.4258</b> <span class="gain">+5.0%</span></td><td><b>0.7318</b> <span class="gain">+1.6%</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h3 class="title is-4 mt-5">Reconstruction quality on TokBench</h3>
+    <div class="table-container">
+      <table class="table is-fullwidth is-hoverable results-table">
+        <thead>
+          <tr><th>Tokenizer</th><th>PSNR &uarr;</th><th>SSIM &uarr;</th><th>LPIPS &darr;</th><th>rFID &darr;</th><th>rFVD &darr;</th><th>F-Sim &uarr;</th></tr>
+        </thead>
+        <tbody>
+          <tr class="group"><td colspan="7">Image VAEs &middot; 4-channel latent</td></tr>
+          <tr><td>SD-VAE-ft-MSE</td><td>26.15</td><td>0.7703</td><td>0.1536</td><td>7.86</td><td>&ndash;</td><td>0.4542</td></tr>
+          <tr><td>+ finetune (&ell;<sub>1</sub> + LPIPS + GAN)</td><td>25.86</td><td>0.7672</td><td>0.1515</td><td><b>7.38</b></td><td>&ndash;</td><td>0.4595</td></tr>
+          <tr class="ours"><td>+ FS-VAE, stage 1</td><td><b>26.36</b></td><td><b>0.7804</b></td><td>0.1525</td><td>9.04</td><td>&ndash;</td><td><b>0.4729</b></td></tr>
+          <tr class="ours"><td>+ FS-VAE, stage 1+2</td><td>26.15</td><td>0.7760</td><td><b>0.1503</b></td><td>7.76</td><td>&ndash;</td><td>0.4667</td></tr>
+          <tr><td>SDXL-VAE</td><td>26.53</td><td>0.7904</td><td>0.1471</td><td><b>7.10</b></td><td>&ndash;</td><td>0.5011</td></tr>
+          <tr class="ours"><td>+ FS-VAE, stage 1</td><td><b>26.78</b></td><td><b>0.7981</b></td><td>0.1467</td><td>8.37</td><td>&ndash;</td><td><b>0.5116</b></td></tr>
+          <tr class="ours"><td>+ FS-VAE, stage 1+2</td><td>26.76</td><td>0.7974</td><td><b>0.1456</b></td><td>7.58</td><td>&ndash;</td><td>0.5106</td></tr>
+          <tr class="group"><td colspan="7">Video VAEs &middot; 16-channel latent</td></tr>
+          <tr><td>Wan 2.1 VAE</td><td>30.55</td><td><b>0.9056</b></td><td>0.1169</td><td><b>9.13</b></td><td><b>8.30</b></td><td>0.5215</td></tr>
+          <tr class="ours"><td>+ FS-VAE, stage 1</td><td><b>30.61</b></td><td>0.9050</td><td><b>0.1168</b></td><td>9.54</td><td>8.80</td><td><b>0.5219</b></td></tr>
+          <tr><td>RefDecoder</td><td>30.53</td><td>0.9062</td><td>0.1203</td><td>10.37</td><td>10.68</td><td>0.5533</td></tr>
+          <tr><td>+ finetune (&ell;<sub>1</sub> + LPIPS)</td><td>30.99</td><td>0.9108</td><td>0.1151</td><td>9.70</td><td>9.65</td><td>0.5644</td></tr>
+          <tr class="ours"><td>+ FS-VAE, stage 1</td><td><b>31.13</b></td><td><b>0.9130</b></td><td><b>0.1121</b></td><td><b>9.11</b></td><td><b>8.11</b></td><td><b>0.5684</b></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="caption">Bold: best within each decoder block. See the paper for the full comparison with DC-AE, VA-VAE, FLUX, SD3.5, Cosmos, CogVideoX and others.</p>
+
+    <h3 class="title is-4 mt-5">User study</h3>
+    <div class="content">
+      <p>Three raters compared 50 image pairs side by side in randomized order, choosing the image with more realistic fine detail.
+        FS-VAE was preferred in <b>77%</b> of all comparisons: <b>88%</b> on LAION-Face and <b>67%</b> on TokBench.</p>
+    </div>
+  </div>
+</section>
+
+<!-- Plug and play -->
+<section class="section">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3">Plug-and-Play with Diffusion Models</h2>
+    <img src="./static/images/fig10.jpg" class="figure-img" alt="DiT-XL/2 generations decoded with SD-VAE ft-MSE and FS-VAE">
+    <p class="caption"><b>Same latents, different decoder.</b> DiT-XL/2 samples (250 DDPM steps, CFG 1.5, fixed seed) decoded with SD-VAE ft-MSE (top) and FS-VAE (bottom).
+      Since the encoder is frozen, any improvement comes from the decoder alone.</p>
+
+    <h3 class="title is-4 mt-5">Video</h3>
+    <img src="./static/images/fig9.jpg" class="figure-img" alt="Video results on TokBench with RefDecoder and RefDecoder + FS-VAE">
+    <p class="caption"><b>Video results on TokBench</b> with FS-VAE applied to RefDecoder on Wan 2.1 latents. rFVD improves from 9.65 to 8.11 over RefDecoder finetuned on the same data without the pyramid term.</p>
+  </div>
+</section>
+
+<section class="section" id="BibTeX">
+  <div class="container is-max-desktop content">
+    <h2 class="title">BibTeX</h2>
+    <pre><code>@inproceedings{fsvae2027,
+  title     = {Frequency-Steered {VAE}s: Restoring Fine Details in Low-Resolution Latents},
+  author    = {Anonymous},
+  booktitle = {Under review at the International Conference on Learning Representations (ICLR)},
+  year      = {2027}
+}</code></pre>
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="container">
+    <div class="columns is-centered">
+      <div class="column is-8">
+        <div class="content has-text-centered">
+          <p>
+            This website is licensed under a <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/">Creative Commons Attribution-ShareAlike 4.0 International License</a>.
+            Template adapted from <a href="https://github.com/nerfies/nerfies.github.io">Nerfies</a>.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.min.js" async></script>
+<script src="./static/js/index.js"></script>
+</body>
+</html>
