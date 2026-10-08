@@ -7,7 +7,9 @@
   <meta name="keywords" content="VAE, latent diffusion, steerable pyramid, frequency, distillation, FS-VAE">
   <title>FS-VAE: Frequency-Steered VAEs</title>
 
-  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700;800&family=Noto+Sans:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bulma/0.9.4/css/bulma.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/jpswalsh/academicons@1/css/academicons.min.css">
@@ -15,11 +17,12 @@
 </head>
 <body>
 
-<section class="hero">
+<section class="hero top-hero">
   <div class="hero-body">
     <div class="container is-max-desktop">
       <div class="columns is-centered">
         <div class="column has-text-centered">
+          <p class="acronym">FS-VAE</p>
           <h1 class="title is-1 publication-title">Frequency-Steered VAEs: Restoring Fine Details in Low-Resolution Latents</h1>
           <div class="is-size-5 publication-authors">
             <span class="author-block"><a href="https://manushree635.github.io/" target="_blank" rel="noopener">Manushree Vasu</a><sup>1</sup>,</span>
@@ -29,7 +32,7 @@
             <span class="author-block"><a href="https://deeptigp.github.io/" target="_blank" rel="noopener">Deepti Ghadiyaram</a><sup>1</sup></span>
           </div>
 
-          <div class="is-size-5 publication-authors">
+          <div class="is-size-6 publication-affiliations">
             <span class="author-block"><sup>1</sup>Boston University,</span>
             <span class="author-block"><sup>2</sup>&Eacute;cole Polytechnique,</span>
             <span class="author-block"><sup>3</sup>Universit&eacute; Paris-Saclay</span>
@@ -58,12 +61,17 @@
 <section class="hero teaser">
   <div class="container is-max-desktop">
     <div class="hero-body">
-      <img src="./static/images/fig1.jpg" class="teaser-img" alt="Ground truth, SD-VAE, SD-VAE-ft-MSE and FS-VAE reconstructions at 256x256 with face crops and F-Sim scores">
+      <img src="./static/images/fig1.jpg" class="teaser-img figure-card" alt="Ground truth, SD-VAE, SD-VAE-ft-MSE and FS-VAE reconstructions at 256x256 with face crops and F-Sim scores">
       <h2 class="subtitle has-text-centered">
         <b><span class="dnerf">FS-VAE</span> recovers the fine-grained detail lost at low resolution by steering frequency information
         during the decoding stage of the VAE.</b> Just the VAE's decoder is finetuned, without expanding the channels, relying on
         external foundation models, or retraining the downstream diffusion model.
       </h2>
+      <div class="highlights">
+        <div class="highlight"><span class="hl-num">+10.2%</span><span class="hl-label">F-Sim on small faces (0.1&ndash;0.2 scale)</span></div>
+        <div class="highlight"><span class="hl-num">77%</span><span class="hl-label">preferred over the baseline in a user study</span></div>
+        <div class="highlight"><span class="hl-num">0</span><span class="hl-label">extra latent channels; decoder-only finetune</span></div>
+      </div>
     </div>
   </div>
 </section>
@@ -72,7 +80,7 @@
   <div class="container is-max-desktop">
     <div class="columns is-centered has-text-centered">
       <div class="column is-four-fifths">
-        <h2 class="title is-3">Abstract</h2>
+        <h2 class="title is-3 section-title">Abstract</h2>
         <div class="content has-text-justified">
           <p>
             Latent diffusion models (LDM) rely on VAEs to compress visual inputs for computational efficiency. Through an in-depth
@@ -89,9 +97,9 @@
   </div>
 </section>
 
-<section class="section">
+<section class="section alt">
   <div class="container is-max-desktop">
-    <h2 class="title is-3">What Low-Resolution VAEs Lose</h2>
+    <h2 class="title is-3 section-title">What Low-Resolution VAEs Lose</h2>
     <div class="content has-text-justified">
       <p>
         We decompose each image with a steerable pyramid and systematically swap subbands from the teacher
@@ -99,10 +107,10 @@
         <i>&ycirc;<sub>S</sub></i> (256&sup2;), then measure identity preservation (F-Sim).
       </p>
     </div>
-    <img src="./static/images/fig2.png" class="figure-img" alt="Band swap test">
+    <img src="./static/images/fig2.png" class="figure-img figure-card" alt="Band swap test">
     <p class="caption"><b>Frequency Band Swap Test:</b> just swapping the <i>L1</i> band increases the absolute F-Sim by <b>0.43</b>.</p>
 
-    <img src="./static/images/fig3.png" class="figure-img mt-5" alt="Average F-Sim gains per swapped band for four VAEs">
+    <img src="./static/images/fig3.png" class="figure-img figure-card mt-5" alt="Average F-Sim gains per swapped band for four VAEs">
     <p class="caption"><b>Average F-Sim gains</b> on 1000 TokBench faces. Mid- to higher frequency bands such as <i>L1</i> and <i>L2</i>
       are where signal is lost in 4-channel VAEs, while <i>L0</i> and <i>L1</i> is where most information is lost in 16-channel VAEs.</p>
 
@@ -119,8 +127,8 @@
 
 <section class="section">
   <div class="container is-max-desktop">
-    <h2 class="title is-3">Method</h2>
-    <img src="./static/images/fig4.png" class="figure-img" alt="FS-VAE overview">
+    <h2 class="title is-3 section-title">Method</h2>
+    <img src="./static/images/fig4.png" class="figure-img figure-card" alt="FS-VAE overview">
     <p class="caption"><b>Overview of FS-VAE:</b> The teacher is a frozen VAE that takes a higher-resolution image. The student encodes
       the same image at a lower resolution with the same frozen encoder, and only its decoder is trained.</p>
 
@@ -147,7 +155,7 @@
     </div>
     <div class="columns is-centered">
       <div class="column is-9">
-        <img src="./static/images/fig5.jpg" class="figure-img" alt="Stage 1 artifacts and residual power spectra">
+        <img src="./static/images/fig5.jpg" class="figure-img figure-card" alt="Stage 1 artifacts and residual power spectra">
         <p class="caption">(a) <b>High-frequency artifacts</b> introduced by Stage 1 are removed by Stage 2.
           (b) <b>Power spectrum of the residual</b>, averaged over 200 images: the bright spots after Stage 1 are eliminated after Stage 2.</p>
       </div>
@@ -155,9 +163,9 @@
   </div>
 </section>
 
-<section class="section">
+<section class="section alt">
   <div class="container is-max-desktop">
-    <h2 class="title is-3">Results</h2>
+    <h2 class="title is-3 section-title">Results</h2>
     <div class="content has-text-justified">
       <p>
         Stage 1 restores high-frequency details missing from the 256&sup2; baseline, with substantial gains on small faces
@@ -167,7 +175,7 @@
       </p>
     </div>
 
-    <div class="table-container">
+    <div class="table-container table-card">
       <table class="table is-fullwidth is-hoverable results-table">
         <thead>
           <tr><th>Face size (relative scale <i>s</i>)</th><th>s &lt; 0.1</th><th>0.1&ndash;0.2</th><th>0.2&ndash;0.3</th><th>s &gt; 0.3</th></tr>
@@ -180,7 +188,7 @@
     </div>
     <p class="caption"><b>Face similarity (F-Sim) by face size</b> on TokBench.</p>
 
-    <div class="table-container mt-5">
+    <div class="table-container table-card mt-5">
       <table class="table is-fullwidth is-hoverable results-table">
         <thead>
           <tr><th>Tokenizer</th><th>PSNR &uarr;</th><th>SSIM &uarr;</th><th>LPIPS &darr;</th><th>rFID &darr;</th><th>rFVD &darr;</th><th>F-Sim &uarr;</th></tr>
@@ -209,20 +217,20 @@
 
 <section class="section">
   <div class="container is-max-desktop">
-    <h2 class="title is-3">Compatibility with Diffusion Models</h2>
-    <img src="./static/images/fig10.jpg" class="figure-img" alt="DiT-XL/2 generations decoded with SD-VAE ft-MSE and FS-VAE">
+    <h2 class="title is-3 section-title">Compatibility with Diffusion Models</h2>
+    <img src="./static/images/fig10.jpg" class="figure-img figure-card" alt="DiT-XL/2 generations decoded with SD-VAE ft-MSE and FS-VAE">
     <p class="caption">Generations from DiT-XL/2 decoded with the baseline decoder (top) and with FS-VAE (bottom). Both decode the
       <u>same</u> sampled latents, so any improvement comes from the decoder alone.</p>
   </div>
 </section>
 
-<section class="section">
+<section class="section alt">
   <div class="container is-max-desktop">
-    <h2 class="title is-3 has-text-centered">Interactive Comparison</h2>
+    <h2 class="title is-3 section-title">Interactive Comparison</h2>
     <p class="has-text-centered mb-5">
       Ground truth on the left, the selected decoder's 256&sup2; reconstruction on the right. Drag to compare.
     </p>
-    <div class="columns is-centered">
+    <div class="columns is-centered compare-card">
       <div class="column is-6">
         <div class="compare-stage" id="stage">
           <img id="imgR" alt="">
