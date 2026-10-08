@@ -132,18 +132,18 @@
     </div>
 
     <h3 class="title is-4">Stage 2: Adversarial post-tuning</h3>
-    <div class="columns">
-      <div class="column is-7">
+    <div class="content has-text-justified">
+      <p>
+        In 4-channel VAEs, \(\mathcal{L}_{\text{dist}}\) introduces a subtle periodic grain artifact, visible as bright spots in
+        the residual power spectrum. We briefly post-tune the decoder with &ell;<sub>1</sub>, LPIPS and a PatchGAN adversarial loss,
+        which suppresses these spectral spikes and restores clean reconstructions.
+      </p>
+    </div>
+    <div class="columns is-centered">
+      <div class="column is-9">
         <img src="./static/images/fig5.jpg" class="figure-img" alt="Stage 1 artifacts and residual power spectra">
-      </div>
-      <div class="column">
-        <div class="content has-text-justified">
-          <p>
-            In 4-channel VAEs, \(\mathcal{L}_{\text{dist}}\) introduces a subtle periodic grain artifact, visible as bright spots in
-            the residual power spectrum. We briefly post-tune the decoder with &ell;<sub>1</sub>, LPIPS and a PatchGAN adversarial loss,
-            which suppresses these spectral spikes and restores clean reconstructions.
-          </p>
-        </div>
+        <p class="caption">(a) <b>High-frequency artifacts</b> introduced by Stage 1 are removed by Stage 2.
+          (b) <b>Power spectrum of the residual</b>, averaged over 200 images: the bright spots after Stage 1 are eliminated after Stage 2.</p>
       </div>
     </div>
   </div>
