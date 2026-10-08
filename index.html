@@ -63,8 +63,13 @@
     <div class="hero-body">
       <img src="./static/images/fig1.jpg" class="teaser-img" alt="Ground truth, SD-VAE, SD-VAE-ft-MSE and FS-VAE reconstructions at 256x256 with face crops and F-Sim scores">
       <h2 class="subtitle has-text-centered">
-        <span class="dnerf">FS-VAE</span> recovers the fine facial detail that VAEs lose at 256&sup2;,
-        by finetuning only the decoder. Same latent, same encoder, no retraining of the diffusion model.
+        <b><span class="dnerf">FS-VAE</span> recovers the fine-grained detail lost at low resolution by steering frequency information
+        during the decoding stage of the variational autoencoder (VAE), through a cross-resolution distillation setup.</b>
+        Results are shown for SD-VAE, SD-VAE-ft-MSE, and FS-VAE at 256&sup2; on TokBench. We report the face similarity (F-Sim)
+        between the generated and ground truth (cropped) faces. Notice how as the face sizes decrease, the baselines struggle to
+        reconstruct crucial details such as the shape of the eyes and teeth. FS-VAE is a light-weight plug and play upgrade where
+        just the VAE's decoder is finetuned to recover high-frequency details from the latent at its native resolution, without
+        expanding the channels, relying on external foundation models, or retraining the downstream diffusion model.
       </h2>
     </div>
   </div>
@@ -107,7 +112,10 @@
   <div class="container is-max-desktop">
     <h2 class="title is-3 has-text-centered">Interactive Comparison</h2>
     <p class="has-text-centered mb-5">
-      Drag the slider: ground truth on the left, the selected decoder's 256&sup2; reconstruction on the right.
+      Qualitative results comparing FS-VAE with the baseline, showing the recovery of fine facial detail at 256&sup2; and the
+      corresponding increase in F-Sim. We also show results for a different band introduction schedule that introduces bands
+      progressively from fine to coarse every 5 epochs.<br>
+      <span class="is-size-7 has-text-grey">Drag the slider: ground truth on the left, the selected decoder's reconstruction on the right.</span>
     </p>
     <div class="columns is-centered">
       <div class="column is-6">
@@ -127,7 +135,7 @@
         <div class="methods" id="methods"></div>
         <div class="context mt-4">
           <img id="ctx" alt="Full 256x256 input with the face crop marked">
-          <p class="is-size-7">Full 256&sup2; input. The marked face is what the decoder must rebuild.</p>
+          <p class="is-size-7">Input <i>I<sub>S</sub></i> (256&sup2;)</p>
         </div>
       </div>
     </div>
@@ -139,25 +147,66 @@
   <div class="container is-max-desktop">
     <div class="columns is-centered">
       <div class="column is-full-width">
-        <h2 class="title is-3">What Do Low-Resolution VAEs Lose?</h2>
+        <h2 class="title is-3">Investigation: What Low-Resolution VAEs Lose</h2>
         <div class="content has-text-justified">
           <p>
-            We decompose images with a complex steerable pyramid into a high-pass residual <i>H</i>, five
-            octave-spaced levels <i>L0</i>&ndash;<i>L4</i> (128, 64, 32, 16 and 8 cycles per image, four
-            orientations each) and a low-pass residual <i>Lo</i>. Since the transform is invertible, we can swap a
-            single band from the 512&sup2; teacher reconstruction (or the ground truth) into the 256&sup2; student
-            reconstruction and measure how much face identity (F-Sim) returns, analogous to activation patching.
+            <b>Steerable pyramid decomposition:</b> Encoding images at 256&sup2; rather than 512&sup2; leads to a notable loss of
+            high-frequency detail during VAE reconstruction. Because raw RGB representations cannot isolate <em>how</em> and
+            <em>where</em> these fine-grained structural details are lost, we analyze frequency degradation using the steerable
+            pyramid transform. The steerable pyramid is an invertible, shift-invariant multi-scale operator <b>P</b> that decomposes
+            an image into spatial frequency subbands and orientations.
+          </p>
+          <p>
+            <b>Setup:</b> To conduct our diagnostic study, we apply steerable pyramid decompositions to 512&sup2; ground-truth
+            images (<i>I<sub>G</sub></i>), their corresponding VAE reconstructions at 512&sup2; (<i>&ycirc;<sub>T</sub></i>, the
+            teacher signal), and 256&sup2; VAE reconstructions upsampled to 512&sup2; (<i>&ycirc;<sub>S</sub></i>, the student
+            signal). Each image is decomposed into a residual high-pass band <i>H</i>, <i>S</i> = 5 octave-spaced frequency levels
+            (<i>L0</i>&ndash;<i>L4</i>, centered at 128, 64, 32, 16, and 8 cycles per image), and a residual low-pass band
+            <i>Lo</i> (&lt; 6 cpi). Each intermediate level is split across <i>O</i> = 4 orientations. Because the steerable
+            pyramid transform is fully invertible, an image can be reconstructed even when a subset of its decomposed frequency
+            subbands is replaced with subbands from another image. We leverage this and systematically swap subbands from the
+            teacher <i>&ycirc;<sub>T</sub></i> or ground-truth image <i>I<sub>G</sub></i> into the student reconstruction
+            <i>&ycirc;<sub>S</sub></i>. Following each swap, we quantify identity preservation using the TokBench metric (F-Sim),
+            defined as the cosine similarity between face-recognition embeddings of <i>ỹ<sub>S</sub></i> and <i>I<sub>G</sub></i>.
+          </p>
+          <p>
+            This intervention is conceptually analogous to activation patching in interpretability literature, which has been
+            widely applied to LLMs and recently extended to text-to-image and video models. To our knowledge, this is the first
+            interpretability-driven causal analysis to localize frequency-band loss in low-resolution VAE reconstructions.
           </p>
         </div>
         <img src="./static/images/fig2.png" class="figure-img" alt="Band swap test">
-        <p class="caption"><b>Band swap test.</b> Swapping only the <i>L1</i> band from the teacher into the student raises F-Sim from 0.206 to 0.635.</p>
+        <p class="caption"><b>Frequency Band Swap Test:</b> We decompose each image with a complex steerable pyramid into a highpass residual
+          <i>H</i>, five oriented levels <i>L0</i>&ndash;<i>L4</i>, and a lowpass residual <i>Lo</i>. Then replace an individual frequency
+          band in the student reconstruction (<i>&ycirc;<sub>S</sub></i>), from either the teacher reconstruction (<i>&ycirc;<sub>T</sub></i>),
+          or ground truth <i>I<sub>G</sub></i>, leaving the other bands untouched (blue frames). In this example, just swapping the <i>L1</i>
+          band increases the absolute F-Sim by <b>0.43</b>. Repeating this for every band over 1000 images from the TokBench, we localize
+          where in the spectrum low-resolution VAEs lag.</p>
 
         <img src="./static/images/fig3.png" class="figure-img mt-5" alt="Average F-Sim gains per swapped band for four VAEs">
-        <p class="caption"><b>Average F-Sim gain per swapped band</b> on 1,000 TokBench faces. 4-channel VAEs lose identity mainly in <i>L1</i>&ndash;<i>L2</i>;
-          16-channel VAEs in <i>L0</i>&ndash;<i>L1</i>, with smaller gaps overall.</p>
+        <p class="caption"><b>Average F-Sim gains</b> on 1000 face images from TokBench obtained from swapping bands between the original,
+          higher-resolution image (<i>I<sub>G</sub></i>) or its corresponding VAE reconstruction (<i>&ycirc;<sub>T</sub></i>) and the
+          lower-resolution counterpart (<i>&ycirc;<sub>S</sub></i>). Notice how mid- to higher frequency bands such as <i>L1</i> and <i>L2</i>
+          are the bands where signal is lost in a lower-resolution, 4-channel latent VAEs, while <i>L0</i> and <i>L1</i> is where most
+          information is lost in low-resolution 16-channel VAEs.</p>
+
+        <div class="content has-text-justified mt-5">
+          <p>
+            <b>Findings: Where is face identity lost?</b> We observe several key insights. First, swapping directly from ground truth
+            <i>I<sub>G</sub></i> consistently yields higher F-Sim gains than swapping from <i>&ycirc;<sub>T</sub></i>, revealing that
+            high-frequency identity information is degraded even in 512&sup2; teacher reconstructions. Second, for 4-channel VAEs like
+            SD-VAE (ft-MSE) and SDXL, performance gains concentrate heavily in the mid-to-fine subbands <i>L1</i> and <i>L2</i>. For
+            example, swapping <i>L1</i> from <i>&ycirc;<sub>T</sub></i> raises F-Sim by +0.147 (+0.208 from <i>I<sub>G</sub></i>), while
+            <i>L2</i> yields gains of +0.118 (+0.132 from <i>I<sub>G</sub></i>). In contrast, <i>L0</i> and <i>L3</i> contribute only
+            &sim; +0.031, while <i>H</i>, <i>L4</i>, and <i>Lo</i> provide negligible improvements&mdash;confirming that information
+            loss at 256&sup2; resides primarily in mid-to-fine frequencies. Third, 16-channel VAEs such as SD3.5 and FLUX.1 exhibit a
+            similar profile, however, with more finer bands (<i>L0</i> and <i>L1</i>). Their gains are smaller due to their higher
+            latent capacity.
+          </p>
+        </div>
 
         <div class="takeaway-box mt-5">
-          <p class="takeaway-title">Takeaways</p>
+          <p class="takeaway-title">Takeaways from Interpretability Analysis of VAEs</p>
           <ol>
             <li>The loss of information between 256&sup2; and 512&sup2; reconstructions can be precisely localized in the frequency domain.</li>
             <li>Most information is lost in the mid- to high-frequency bands of low-resolution VAEs.</li>
@@ -174,21 +223,46 @@
   <div class="container is-max-desktop">
     <h2 class="title is-3">Method</h2>
     <img src="./static/images/fig4.png" class="figure-img" alt="FS-VAE overview">
-    <p class="caption"><b>Overview of FS-VAE.</b> A frozen teacher reconstructs the 512&sup2; image. The student encodes the same image at 256&sup2;
-      with the same frozen encoder; only its decoder is trained. The steerable-pyramid loss penalizes differences between their band magnitudes.</p>
+    <p class="caption"><b>Overview of FS-VAE:</b> The teacher (top) is a frozen VAE which takes a higher-resolution image and its
+      reconstruction is the target for our frequency loss. The student (bottom) encodes the same image at a lower resolution with the
+      same frozen encoder, and only its decoder is trained. Steerable Pyramid operator is applied on both the student and teacher
+      reconstructions and the difference between their magnitude maps is penalized.</p>
 
     <h3 class="title is-4 mt-5">Stage 1: Self-distillation in the frequency bands</h3>
     <div class="content has-text-justified">
       <p>
-        For each subband <i>k</i> we take magnitude maps <i>a<sub>k</sub></i> = |P<sub>k</sub>(&ycirc;)| of the teacher
-        and the (bicubically upsampled) student, and compute a relative error normalized by the teacher's energy in that band,
-        so low-frequency bands with large coefficients do not dominate the gradient:
+        Our goal is to transfer high-frequency details from a high-resolution teacher to a lower-resolution student via
+        self-distillation. However, standard VAE fine-tuning relies heavily on spatial pixel losses such as MSE or &ell;<sub>1</sub>,
+        which treat all frequencies uniformly and fail to enforce targeted recovery of specific frequency bands. Thus, we introduce
+        a frequency- and orientation-aware distillation loss computed directly on the steerable pyramid decompositions of the
+        teacher and student reconstructions.
+      </p>
+      <p>
+        We extract each subband <i>k</i>'s magnitude map of <i>&ycirc;<sub>T</sub></i>, denoted as
+        <i>a<sup>T</sup><sub>k</sub></i> = |<i>P<sub>k</sub></i>(<i>&ycirc;<sub>T</sub></i>)| and of student's reconstruction
+        <i>&ycirc;<sub>S</sub></i>, denoted as <i>a<sup>S</sup><sub>k</sub></i> = |<i>P<sub>k</sub></i>(<i>&ycirc;<sub>S</sub></i>)|,
+        where |&middot;| is a complex modulus operator. These magnitude maps isolate spatial energy across different frequencies and
+        serve as core components for our distillation loss (\(\mathcal{L}_{	ext{dist}}\)). For each sub-band <i>k</i>, we take the
+        pixel wise error on the magnitude maps between the teacher and student, normalized by the teacher's energy in that band,
+        where &langle;&middot;&rangle; denotes spatial mean. The loss is the weighted mean over bands:
       </p>
       <p class="has-text-centered">\[ r_k = \frac{\langle |a^T_k - a^S_k| \rangle}{\langle a^T_k \rangle + \varepsilon}, \qquad
         \mathcal{L}_{\text{dist}} = \frac{\sum_k \omega_k r_k}{\sum_k \omega_k} \]</p>
       <p class="has-text-centered">\[ \mathcal{L} = \lambda_{\text{rec}}\mathcal{L}_{\ell_1} + \lambda_{\text{lp}}\mathcal{L}_{\text{LPIPS}} + \lambda_{\text{dist}}\mathcal{L}_{\text{dist}} \]</p>
       <p>
-        Freezing the encoder keeps the latent space fixed, so any diffusion model trained on it can use the new decoder directly.
+        <i>r<sub>k</sub></i> is formulated as a relative metric because coefficient values in low-frequency bands are significantly
+        larger than those in high-frequency bands, which would otherwise cause low frequencies to dominate the gradient. The
+        normalization ensures critical bands are not underrepresented in the optimization objective. Both the teacher and the
+        student models share the same pretrained autoencoder, differing only in the resolution of the input image. Consequently,
+        their respective latents maintain identical channel counts and downsampling factors, differing only in spatial resolutions.
+        To account for the resolution mismatch between the teacher and student outputs, we upsample <i>&ycirc;<sub>S</sub></i> via
+        bicubic interpolation to match the teacher's resolution.
+      </p>
+      <p>
+        <b>Why fine-tune only the decoder?</b> Freezing the encoder preserves the underlying latent representation, prevents latent
+        space drift, and eliminates the need to retrain downstream diffusion models bound to the original latent space. Restricting
+        fine-tuning to the decoder also allows effective adaptation to domain-specific datasets without degrading cross-domain
+        generalizability.
       </p>
     </div>
 
@@ -196,14 +270,27 @@
     <div class="columns">
       <div class="column is-7">
         <img src="./static/images/fig5.jpg" class="figure-img" alt="Stage 1 artifacts and residual power spectra">
+        <p class="caption">(a) <b>High-frequency artifacts</b> that Stage 1 introduces in 4 channel VAEs. The GAN loss removes the artifact
+          and enhances the texture. (b) <b>Power spectrum of the residual:</b> We compute residual maps by subtracting the ground truth and
+          reconstructed images, then applying Fast Fourier Transform on them. We calculate the power at each spatial frequency averaged
+          over 200 images. Notice the bright spots after Stage 1 of training, which are eliminated after Stage 2 of training.</p>
       </div>
       <div class="column">
         <div class="content has-text-justified">
           <p>
-            Matching per-band energy constrains how much energy each band carries, but not where in the band it goes.
-            In 4-channel VAEs this shows up as a faint periodic grain and bright spots in the residual power spectrum.
-            A brief post-tune with &ell;<sub>1</sub>, LPIPS and a PatchGAN loss removes them. 16-channel video VAEs
-            do not show the artifact and use Stage 1 only.
+            While Stage 1 successfully recovers the missing high frequency details, we empirically observe that in lower capacity
+            (i.e., 4-channel) VAEs, \(\mathcal{L}_{	ext{dist}}\) introduces a subtle periodic grain artifact across the reconstructed
+            image. To diagnose the origin of this pattern, we analyze the 2D Fast Fourier Transform (FFT) of the reconstruction residual.
+            Compared to the baseline, the Stage 1 residual magnitude spectrum reveals prominent, localized bright spots at higher
+            frequency regions. We hypothesize that this behavior arises particularly in low-capacity VAEs because forcing the decoder
+            to match the teacher's high-resolution energy profile constrains the total power per frequency band, but does not impose
+            any constraint on <u>where</u> within the band that energy should be allocated.
+          </p>
+          <p>
+            To eliminate these artifacts, we briefly post-tune the decoder using a compound objective comprising the standard
+            &ell;<sub>1</sub> reconstruction loss, LPIPS perceptual loss, and a PatchGAN adversarial loss. The PatchGAN term,
+            particularly, enforces realistic local texture statistics by penalizing non-natural spectral distributions, effectively
+            suppressing high-norm spectral spikes and restoring clean spatial reconstructions.
           </p>
         </div>
       </div>
@@ -216,7 +303,23 @@
   <div class="container is-max-desktop">
     <h2 class="title is-3">Results</h2>
 
-    <h3 class="title is-4">Gains are largest on small faces</h3>
+    <div class="content has-text-justified">
+      <p>
+        By matching the per-band energy of the 512&sup2; teacher, Stage 1 restores high-frequency details missing from the 256&sup2;
+        baseline. This leads to clear improvements in PSNR, SSIM, and F-Sim (+4.12% from 0.45 &rarr; 0.47 on TokBench). In Stage 2,
+        the adversarial loss introduces a standard perception&ndash;distortion tradeoff, which leads to a slight dip in the pixel-level
+        quality metrics, with an improvement of rFID.
+      </p>
+    </div>
+    <h3 class="title is-4">Performance Across Face Sizes</h3>
+    <div class="content has-text-justified">
+      <p>
+        We evaluate FS-VAE across face scales <i>s</i> = max(<i>w</i>, <i>h</i>)/256, defined following TokBench as the longer bounding
+        box side relative to the cropped image dimension. Substantial gains occur on small faces, i.e., for <i>s</i> &lt; 0.2: +8.7% and
+        +10.2%. These improvements taper off as face scale increases, demonstrating that while the baseline effectively reconstructs
+        prominent faces, FS-VAE successfully addresses its weakness on small-scale facial features.
+      </p>
+    </div>
     <div class="table-container">
       <table class="table is-fullwidth is-hoverable results-table">
         <thead>
@@ -229,8 +332,9 @@
         </tbody>
       </table>
     </div>
+    <p class="caption"><b>Face similarity (F-Sim) by face size</b>, with the relative gain over the teacher for Stage 1.</p>
 
-    <h3 class="title is-4 mt-5">Reconstruction quality on TokBench</h3>
+    <h3 class="title is-4 mt-5">Reconstruction quality on TokBench across image and video autoencoders</h3>
     <div class="table-container">
       <table class="table is-fullwidth is-hoverable results-table">
         <thead>
@@ -254,12 +358,25 @@
         </tbody>
       </table>
     </div>
-    <p class="caption">Bold: best within each decoder block. See the paper for the full comparison with DC-AE, VA-VAE, FLUX, SD3.5, Cosmos, CogVideoX and others.</p>
+    <p class="caption">Highlighted in green are FS-VAE. Bold: best within each decoder-swap block (baseline, finetune, ours).</p>
+    <div class="content has-text-justified mt-4">
+      <p>
+        For video models, we apply only the Stage 1 objective to the decoder of the Wan 2.1 VAE. On TokBench the finetuned decoder stays
+        on par with the teacher, with PSNR (30.55 &rarr; 30.61) and F-Sim slightly improved. To show that the objective generalizes beyond
+        a single decoder, we also apply it on top of RefDecoder, a reference-conditioned Wan 2.1 VAE decoder, by adding the steerable
+        pyramid term to its original training loss. We compare against RefDecoder fine-tuned on the same data with its original loss
+        only, so the pyramid term is the only difference between the two models. With the pyramid term, PSNR, SSIM, LPIPS, rFID and rFVD
+        all improve on TokBench (rFID 9.70 &rarr; 9.11, rFVD 9.65 &rarr; 8.11), and F-Sim increases by 2.73% over the released RefDecoder.
+      </p>
+    </div>
 
     <h3 class="title is-4 mt-5">User study</h3>
     <div class="content">
-      <p>Three raters compared 50 image pairs side by side in randomized order, choosing the image with more realistic fine detail.
-        FS-VAE was preferred in <b>77%</b> of all comparisons: <b>88%</b> on LAION-Face and <b>67%</b> on TokBench.</p>
+      <p>To fully understand the subtle, fine-grained details that FS-VAE is explicitly designed to restore, we conduct a user study.
+        Three participants performed pairwise preference evaluations on 50 image pairs from LAION-Face and TokBench. Reconstructions
+        from the baseline and FS-VAE were displayed side-by-side in a randomized order and position, with human subjects selecting the
+        image exhibiting more realistic fine detail. FS-VAE was preferred in <b>77%</b> of overall comparisons, receiving <b>88%</b>
+        preference on LAION-Face and <b>67%</b> on TokBench.</p>
     </div>
   </div>
 </section>
@@ -267,14 +384,40 @@
 <!-- Plug and play -->
 <section class="section">
   <div class="container is-max-desktop">
-    <h2 class="title is-3">Plug-and-Play with Diffusion Models</h2>
+    <h2 class="title is-3">Compatibility with Diffusion Models</h2>
+    <div class="content has-text-justified">
+      <p>
+        Our key advantage of FS-VAE is its compatibility with many diffusion models built on the SD-VAE latent space. This is primarily
+        because our encoder is frozen and only the decoder is finetuned with the frequency steering loss, thereby a drop-in replacement
+        in the existing pipelines. We show the results on DiT-XL/2, sampling with 250 DDPM steps and learned variance, a classifier-free
+        guidance scale of 1.5, and a fixed seed.
+      </p>
+    </div>
     <img src="./static/images/fig10.jpg" class="figure-img" alt="DiT-XL/2 generations decoded with SD-VAE ft-MSE and FS-VAE">
-    <p class="caption"><b>Same latents, different decoder.</b> DiT-XL/2 samples (250 DDPM steps, CFG 1.5, fixed seed) decoded with SD-VAE ft-MSE (top) and FS-VAE (bottom).
-      Since the encoder is frozen, any improvement comes from the decoder alone.</p>
+    <p class="caption"><b>Compatibility with diffusion models:</b> Generations from DiT-XL/2 decoded with the baseline decoder and with FS-VAE.
+      Since the encoder is frozen, both decode the <u>same</u> sampled latents, so any improvement comes from the decoder alone. FS-VAE
+      recovers noticeably more facial detail, particularly around the eyes, mouth, and nose.</p>
 
     <h3 class="title is-4 mt-5">Video</h3>
     <img src="./static/images/fig9.jpg" class="figure-img" alt="Video results on TokBench with RefDecoder and RefDecoder + FS-VAE">
-    <p class="caption"><b>Video results on TokBench</b> with FS-VAE applied to RefDecoder on Wan 2.1 latents. rFVD improves from 9.65 to 8.11 over RefDecoder finetuned on the same data without the pyramid term.</p>
+    <p class="caption"><b>Video Results on TokBench</b>, with FS-VAE applied to RefDecoder.</p>
+  </div>
+</section>
+
+<section class="section">
+  <div class="container is-max-desktop">
+    <h2 class="title is-3">Conclusion</h2>
+    <div class="content has-text-justified">
+      <p>
+        In this work, we demonstrate that information loss in low-resolution VAEs is non-uniformly distributed across the frequency
+        spectrum. In particular, 4-channel VAEs exhibit localized degradation primarily within mid-to-high frequency steerable pyramid
+        subbands. Leveraging this insight, we design a frequency-targeted self-distillation loss that transfers high-frequency details
+        from a high-resolution teacher model. By fine-tuning solely the decoder, FS-VAE preserves full compatibility with downstream
+        diffusion pipelines. Empirically, FS-VAE significantly enhances facial identity preservation across varying scale ranges,
+        particularly on small faces, where conventional VAEs systematically fail. Furthermore, FS-VAE achieves lower FVD scores across
+        VideoVAEs, demonstrating enhanced temporal consistency and identity stability over time.
+      </p>
+    </div>
   </div>
 </section>
 
