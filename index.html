@@ -165,6 +165,8 @@
       <p>
         Stage 1 restores high-frequency details missing from the 256&sup2; baseline, with substantial gains on small faces
         (<i>s</i> &lt; 0.2: +8.7% and +10.2%). In a user study, FS-VAE was preferred in <b>77%</b> of overall comparisons.
+        For video, adding the steerable pyramid term to RefDecoder improves PSNR, SSIM, LPIPS, rFID and rFVD on TokBench
+        (rFID 9.70 &rarr; 9.11, rFVD 9.65 &rarr; 8.11).
       </p>
     </div>
 
@@ -184,20 +186,27 @@
     <div class="table-container mt-5">
       <table class="table is-fullwidth is-hoverable results-table">
         <thead>
-          <tr><th>Tokenizer</th><th>PSNR &uarr;</th><th>SSIM &uarr;</th><th>LPIPS &darr;</th><th>rFID &darr;</th><th>F-Sim &uarr;</th></tr>
+          <tr><th>Tokenizer</th><th>PSNR &uarr;</th><th>SSIM &uarr;</th><th>LPIPS &darr;</th><th>rFID &darr;</th><th>rFVD &darr;</th><th>F-Sim &uarr;</th></tr>
         </thead>
         <tbody>
-          <tr><td>SD-VAE-ft-MSE</td><td>26.15</td><td>0.7703</td><td>0.1536</td><td>7.86</td><td>0.4542</td></tr>
-          <tr><td>+ finetune (&ell;<sub>1</sub> + LPIPS + GAN)</td><td>25.86</td><td>0.7672</td><td>0.1515</td><td><b>7.38</b></td><td>0.4595</td></tr>
-          <tr class="ours"><td>+ FS-VAE, stage 1</td><td><b>26.36</b></td><td><b>0.7804</b></td><td>0.1525</td><td>9.04</td><td><b>0.4729</b></td></tr>
-          <tr class="ours"><td>+ FS-VAE, stage 1+2</td><td>26.15</td><td>0.7760</td><td><b>0.1503</b></td><td>7.76</td><td>0.4667</td></tr>
-          <tr><td>SDXL-VAE</td><td>26.53</td><td>0.7904</td><td>0.1471</td><td><b>7.10</b></td><td>0.5011</td></tr>
-          <tr class="ours"><td>+ FS-VAE, stage 1</td><td><b>26.78</b></td><td><b>0.7981</b></td><td>0.1467</td><td>8.37</td><td><b>0.5116</b></td></tr>
-          <tr class="ours"><td>+ FS-VAE, stage 1+2</td><td>26.76</td><td>0.7974</td><td><b>0.1456</b></td><td>7.58</td><td>0.5106</td></tr>
+          <tr class="group"><td colspan="7">Image VAEs &middot; 4-channel latent</td></tr>
+          <tr><td>SD-VAE-ft-MSE</td><td>26.15</td><td>0.7703</td><td>0.1536</td><td>7.86</td><td>&ndash;</td><td>0.4542</td></tr>
+          <tr><td>+ finetune (&ell;<sub>1</sub> + LPIPS + GAN)</td><td>25.86</td><td>0.7672</td><td>0.1515</td><td><b>7.38</b></td><td>&ndash;</td><td>0.4595</td></tr>
+          <tr class="ours"><td>+ FS-VAE, stage 1</td><td><b>26.36</b></td><td><b>0.7804</b></td><td>0.1525</td><td>9.04</td><td>&ndash;</td><td><b>0.4729</b></td></tr>
+          <tr class="ours"><td>+ FS-VAE, stage 1+2</td><td>26.15</td><td>0.7760</td><td><b>0.1503</b></td><td>7.76</td><td>&ndash;</td><td>0.4667</td></tr>
+          <tr><td>SDXL-VAE</td><td>26.53</td><td>0.7904</td><td>0.1471</td><td><b>7.10</b></td><td>&ndash;</td><td>0.5011</td></tr>
+          <tr class="ours"><td>+ FS-VAE, stage 1</td><td><b>26.78</b></td><td><b>0.7981</b></td><td>0.1467</td><td>8.37</td><td>&ndash;</td><td><b>0.5116</b></td></tr>
+          <tr class="ours"><td>+ FS-VAE, stage 1+2</td><td>26.76</td><td>0.7974</td><td><b>0.1456</b></td><td>7.58</td><td>&ndash;</td><td>0.5106</td></tr>
+        <tr class="group"><td colspan="7">Video VAEs &middot; 16-channel latent</td></tr>
+          <tr><td>Wan 2.1 VAE</td><td>30.55</td><td><b>0.9056</b></td><td>0.1169</td><td><b>9.13</b></td><td><b>8.30</b></td><td>0.5215</td></tr>
+          <tr class="ours"><td>+ FS-VAE, stage 1</td><td><b>30.61</b></td><td>0.9050</td><td><b>0.1168</b></td><td>9.54</td><td>8.80</td><td><b>0.5219</b></td></tr>
+          <tr><td>RefDecoder</td><td>30.53</td><td>0.9062</td><td>0.1203</td><td>10.37</td><td>10.68</td><td>0.5533</td></tr>
+          <tr><td>+ finetune (&ell;<sub>1</sub> + LPIPS)</td><td>30.99</td><td>0.9108</td><td>0.1151</td><td>9.70</td><td>9.65</td><td>0.5644</td></tr>
+          <tr class="ours"><td>+ FS-VAE, stage 1</td><td><b>31.13</b></td><td><b>0.9130</b></td><td><b>0.1121</b></td><td><b>9.11</b></td><td><b>8.11</b></td><td><b>0.5684</b></td></tr>
         </tbody>
       </table>
     </div>
-    <p class="caption"><b>Reconstruction quality on TokBench.</b> Bold: best within each block.</p>
+    <p class="caption"><b>Reconstruction quality on TokBench across image and video autoencoders.</b> Bold: best within each block.</p>
   </div>
 </section>
 
